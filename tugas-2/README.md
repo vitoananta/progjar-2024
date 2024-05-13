@@ -35,3 +35,6 @@ Membuat sebuah program time server
     ```
     python3 client-time.py
     ```
+
+### Hasil program
+![Hasil program](https://github.com/vitoananta3/progjar-2024/blob/main/assets/tugas-2/hasil-1.png)
