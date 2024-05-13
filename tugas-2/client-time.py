@@ -1,5 +1,6 @@
 import socket
 import logging
+import time
 
 def send_time_request(sock):
     message = 'TIME\r\n'
@@ -22,6 +23,7 @@ def main():
 
     try:
         send_time_request(sock)
+        time.sleep(5)
         send_quit_request(sock)
     finally:
         logging.warning("Closing")
