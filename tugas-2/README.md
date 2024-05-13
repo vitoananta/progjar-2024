@@ -33,4 +33,4 @@ Membuat sebuah program time server
     ```
 
 ### Hasil program
-![Hasil program](https://github.com/vitoananta3/progjar-2024/blob/main/assets/tugas-2/hasil-1.png)
+![Hasil program](https://github.com/vitoananta3/progjar-2024/blob/main/assets/tugas-2/hasil.png)
