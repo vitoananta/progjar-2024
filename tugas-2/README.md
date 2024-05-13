@@ -1,9 +1,5 @@
 # Tugas 2
 
-| Nama | NRP | Kelas |
-|----------------|-----------|--------------------|
-| Vito Febrian Ananta | 5025211224  | Pemrograman Jaringan (E) |
-
 ### Detail Tugas
 
 Membuat sebuah program time server
