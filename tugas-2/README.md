@@ -9,24 +9,30 @@ Membuat sebuah program time server
 1. Clone repository
 
     ```
-    git clone https://github.com/vitoananta3/tugas-2-progjar.git
+    git clone https://github.com/vitoananta3/progjar-2024.git
     ```
 
 2. Pindah ke directory hasil dari clone tersebut
 
     ```
-    cd tugas-2-progjar
+    cd progjar-2024
     ```
 
-3. Jalankan environment masing-masing
+3. Pindah ke directory tugas 2
 
-4. Jalankan server-time.py
+    ```
+    cd tugas-2
+    ```
+
+4. Jalankan environment masing-masing
+
+5. Jalankan server-time.py
 
     ```
     python3 server-time.py
     ```
 
-5. Jalankan client-time.py
+6. Jalankan client-time.py
 
     ```
     python3 client-time.py
