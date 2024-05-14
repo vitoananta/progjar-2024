@@ -55,4 +55,4 @@ Mengimplementasikan kode program untuk server dari contoh referensi yang diberik
     ```
 
 ### Contoh hasil benchmark
-![Contoh hasil benchmark](https://github.com/vitoananta3/progjar-2024/blob/main/assets/tugas-ets/hasil-thread-https-50.png)
+![Contoh hasil benchmark](https://github.com/vitoananta3/progjar-2024/blob/main/assets/tugas-ets/thread-https/hasil-thread-https-50.png)
