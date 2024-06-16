@@ -73,4 +73,4 @@ Pada permintaan DELETE, proses dimulai dari file file_client.py yang memanggil f
 
 ### Video Demo Operasi Baru Dijalankan
 
-
+https://github.com/vitoananta/progjar-2024/assets/142609964/e034f82f-232e-4ba9-8c2e-63f5dad65196
