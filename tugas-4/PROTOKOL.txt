@@ -1,0 +1,80 @@
+FILE SERVER
+TUJUAN: melayani client dalam request file server
+
+ATURAN PROTOKOL:
+- client harus mengirimkan request dalam bentuk string
+- string harus dalam format
+  REQUEST spasi PARAMETER
+- PARAMETER dapat berkembang menjadi PARAMETER1 spasi PARAMETER2 dan seterusnya
+
+REQUEST YANG DILAYANI:
+- informasi umum:
+  * Jika request tidak dikenali akan menghasilkan pesan
+    - status: ERROR
+    - data: request tidak dikenali
+  * Semua result akan diberikan dalam bentuk JSON dan diakhiri
+    dengan character ascii code #13#10#13#10 atau "\r\n\r\n"
+
+LIST
+* TUJUAN: untuk mendapatkan daftar seluruh file yang dilayani oleh file server
+* PARAMETER: tidak ada
+* RESULT:
+- BERHASIL:
+  - status: OK
+  - data: list file
+- GAGAL:
+  - status: ERROR
+  - data: pesan kesalahan
+
+GET
+* TUJUAN: untuk mendapatkan isi file dengan menyebutkan nama file dalam parameter
+* PARAMETER:
+  - PARAMETER1 : nama file
+* RESULT:
+- BERHASIL:
+  - status: OK
+  - data_namafile : nama file yang diminta
+  - data_file : isi file yang diminta (dalam bentuk base64)
+  - data_pesan: 'telah diambil'
+- GAGAL:
+  - status: ERROR
+  - data:
+    - pesan kesalahan jika error selain parameter nama file tidak ada
+    - pesan 'file yang ingin diambil kosong' jika parameter nama file kosong
+    - pesan 'file yang ingin diambil tidak ada' jika file tidak ada di server
+
+UPLOAD
+* TUJUAN: untuk mengupload file dengan menyebutkan nama file dan konten file dalam parameter
+* PARAMETER:
+  - PARAMETER1 : nama file
+  - PARAMETER2 : konten file (base64)
+* RESULT:
+- BERHASIL:
+  - status: OK
+  - data_pesan: 'telah diupload'
+- GAGAL:
+  - status: ERROR
+  - data:
+    - pesan kesalahan jika error selain parameter nama file kosong dan/atau paramter konten file kosong
+    - pesan 'file yang ingin diupload kosong' jika parameter nama file kosong
+    - pesan 'file yang ingin diupload tidak ada' jika file tidak ada di server
+    - pesan 'untuk upload file diperlukan 2 parameter: "nama_file konten_file"' jika tidak ada kedua parameter
+
+DELETE
+* TUJUAN: untuk menghapus file dengan menyebutkan nama file dalam parameter
+* PARAMETER:
+  - PARAMETER1 : nama file
+* RESULT:
+- BERHASIL:
+  - status: OK
+  - data_pesan: 'telah dihapus'
+- GAGAL:
+  - status: ERROR
+  - data:
+    - pesan kesalahan jika error selain parameter nama file tidak ada
+    - pesan 'file yang ingin dihapus kosong' jika parameter nama file kosong
+    - pesan 'file yang ingin dihapus tidak ada' jika file tidak ada di server
+
+
+Penjelasan update spesifikasi UPLOAD dan DELETE:
+Pada request UPLOAD, client harus menyertakan dua parameter: nama file dan konten file dalam format base64. Jika request UPLOAD berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah diupload. Namun, jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. Kesalahan dapat terjadi jika salah satu atau kedua parameter tidak ada, atau jika terjadi masalah lain selama proses pengunggahan. Pada request DELETE, client hanya perlu menyertakan satu parameter yaitu nama file yang akan dihapus. Jika request DELETE berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah dihapus. Jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. Kesalahan dapat terjadi jika parameter nama file kosong, atau jika file yang ingin dihapus tidak ada di server.
