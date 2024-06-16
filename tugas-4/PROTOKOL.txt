@@ -77,4 +77,10 @@ DELETE
 
 
 Penjelasan update spesifikasi UPLOAD dan DELETE:
-Pada request UPLOAD, client harus menyertakan dua parameter: nama file dan konten file dalam format base64. Jika request UPLOAD berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah diupload. Namun, jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. Kesalahan dapat terjadi jika salah satu atau kedua parameter tidak ada, atau jika terjadi masalah lain selama proses pengunggahan. Pada request DELETE, client hanya perlu menyertakan satu parameter yaitu nama file yang akan dihapus. Jika request DELETE berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah dihapus. Jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. Kesalahan dapat terjadi jika parameter nama file kosong, atau jika file yang ingin dihapus tidak ada di server.
+Pada request UPLOAD, client harus menyertakan dua parameter: nama file dan konten file dalam format base64. 
+Jika request UPLOAD berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah diupload. 
+Namun, jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. 
+Kesalahan dapat terjadi jika salah satu atau kedua parameter tidak ada, atau jika terjadi masalah lain selama proses pengunggahan. 
+Pada request DELETE, client hanya perlu menyertakan satu parameter yaitu nama file yang akan dihapus. 
+Jika request DELETE berhasil, server akan mengembalikan status "OK" dengan pesan bahwa file telah dihapus. 
+Jika gagal, server akan mengembalikan status "ERROR" dengan pesan kesalahan yang sesuai. Kesalahan dapat terjadi jika parameter nama file kosong, atau jika file yang ingin dihapus tidak ada di server.
