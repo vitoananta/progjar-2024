@@ -2,7 +2,7 @@
 
 ### Detail Tugas
 
-Impelementasikan load balancer dengan mode ansynchronous dan mode server thread, lalu lakukan test serta berikan kesimpulannya. Referensi [progjar4a](https://github.com/rm77/progjar/tree/master/progjar6)
+Impelementasikan load balancer dengan mode ansynchronous dan mode server thread, lalu lakukan test serta berikan kesimpulannya. Referensi [progjar6](https://github.com/rm77/progjar/tree/master/progjar6)
 
 ### Cara Menjalankan
 
