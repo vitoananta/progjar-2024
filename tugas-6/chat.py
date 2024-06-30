@@ -108,16 +108,6 @@ class Chat:
                 usernamefrom = self.sessions[sessionid]['username']
                 logging.warning("JOINGROUPREALM: session {} trying to join group {} in realm {}".format(sessionid, groupname, realm_id))
                 return self.join_group_realm(sessionid, realm_id, usernamefrom, groupname)
-            
-            elif (command=='sendgroup'):
-                sessionid = j[1].strip()
-                groupname = j[2].strip()
-                message=""
-                for w in j[3:]:
-                    message="{} {}" . format(message,w)
-                usernamefrom = self.sessions[sessionid]['username']
-                logging.warning("SEND: session {} send message from {} to {}" . format(sessionid, groupname, usernamefrom,groupname))
-                return self.send_group_message(sessionid,groupname, usernamefrom,message)
           
             elif command == "addrealm":
                 realm_id = j[1].strip()
@@ -295,37 +285,6 @@ class Chat:
             self.group[groupname]['members'].append({'username': usernamefrom, 'realm': realm_id})
         
         return result
-
-    def send_group_message(self, sessionid, groupname, username_from, message):
-        if (sessionid not in self.sessions):
-            return {'status': 'ERROR', 'message': 'Session Tidak Ditemukan'}
-        s_fr = self.get_user(username_from)
-        if s_fr is False:
-            return {'status': 'ERROR', 'message': 'User Tidak Ditemukan'}
-        for username_dest in self.group[groupname]['members']:
-            s_to = self.get_user(username_dest)
-            if s_to is False:
-                continue
-            message = {'group': groupname,'msg_from': s_fr['nama'], 'msg_to': s_to['nama'], 'msg': message}
-            try:    
-                self.group[groupname]['message'][username_from].put(message)
-            except KeyError:
-                self.group[groupname]['message'][username_from]=Queue()
-                self.group[groupname]['message'][username_from].put(message)
-            
-            outqueue_sender = s_fr['outgoing']
-            inqueue_receiver = s_to['incoming']
-            try:    
-                outqueue_sender[username_from].put(message)
-            except KeyError:
-                outqueue_sender[username_from]=Queue()
-                outqueue_sender[username_from].put(message)
-            try:
-                inqueue_receiver[username_from].put(message)
-            except KeyError:
-                inqueue_receiver[username_from]=Queue()
-                inqueue_receiver[username_from].put(message)
-        return {'status': 'OK', 'message': 'Message Sent'}
     
     def add_realm(self, realm_id, realm_dest_address, realm_dest_port, data):
         j = data.split()
