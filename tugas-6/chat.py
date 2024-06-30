@@ -258,21 +258,21 @@ class Chat:
         return self.group[group_name]
 
     def create_group(self, sessionid, usernamefrom, groupname):
-        if (sessionid not in self.sessions):
+        if sessionid not in self.sessions:
             return {'status': 'ERROR', 'message': 'Session Tidak Ditemukan'}
-        self.group[groupname]={
+        self.group[groupname] = {
             'admin': usernamefrom,
-            'members': [usernamefrom],
-            'message':{}
+            'members': [{'username': usernamefrom, 'realm': 'local'}],  # Local realm for the group creator
+            'message': {}
         }
         return {'status': 'OK', 'message': 'Add group successful'}
     
     def join_group(self, sessionid, usernamefrom, groupname):
-        if (sessionid not in self.sessions):
+        if sessionid not in self.sessions:
             return {'status': 'ERROR', 'message': 'Session Tidak Ditemukan'}
-        if usernamefrom in self.group[groupname]['members']:
+        if usernamefrom in [member['username'] for member in self.group[groupname]['members']]:
             return {'status': 'ERROR', 'message': 'User sudah dalam group'}
-        self.group[groupname]['members'].append(usernamefrom)
+        self.group[groupname]['members'].append({'username': usernamefrom, 'realm': 'local'})
         return {'status': 'OK', 'message': 'Join group successful'}
     
     def join_group_realm(self, sessionid, realm_id, usernamefrom, groupname):
@@ -283,6 +283,17 @@ class Chat:
         
         j = f"recvjoingrouprealm {usernamefrom} {groupname}\r\n"
         result = self.realms[realm_id].send_string(j)
+        
+        # If successful, add the user to the group with the realm information
+        if result['status'] == 'OK':
+            if groupname not in self.group:
+                self.group[groupname] = {
+                    'admin': usernamefrom,
+                    'members': [],
+                    'message': {}
+                }
+            self.group[groupname]['members'].append({'username': usernamefrom, 'realm': realm_id})
+        
         return result
 
     def send_group_message(self, sessionid, groupname, username_from, message):
@@ -379,10 +390,10 @@ class Chat:
     def recv_join_group_realm(self, usernamefrom, groupname):
         if groupname not in self.group:
             return {'status': 'ERROR', 'message': 'Group Tidak Ditemukan'}
-        if usernamefrom in self.group[groupname]['members']:
+        if usernamefrom in [member['username'] for member in self.group[groupname]['members']]:
             return {'status': 'ERROR', 'message': 'User sudah dalam group'}
         
-        self.group[groupname]['members'].append(usernamefrom)
+        self.group[groupname]['members'].append({'username': usernamefrom, 'realm': 'remote'})
         return {'status': 'OK', 'message': 'Join group successful'}
     
     def list_group_members(self, sessionid, groupname):
