@@ -233,18 +233,25 @@ class Chat:
             return {'status': 'ERROR', 'message': 'Group not found'}
         if self.sessions[sessionid]['username'] not in self.group[groupname]['members']:
             return {'status': 'ERROR', 'message': 'Not a member'}
+        
         sender = self.get_user(self.sessions[sessionid]['username'])
-        for receiver in self.group[groupname]['members']:
-            receiver = self.get_user(receiver)
-            message = {'group': groupname, 'msg_from': sender['nama'], 'msg_to': receiver['nama'], 'msg': message}
-            outqueue_sender = sender['outgoing']
-            inqueue_receiver = receiver['incoming']
-            if sender['nama'] not in outqueue_sender:
-                outqueue_sender[sender['nama']] = Queue()
-            outqueue_sender[sender['nama']].put(message)
-            if sender['nama'] not in inqueue_receiver:
-                inqueue_receiver[sender['nama']] = Queue()
-            inqueue_receiver[sender['nama']].put(message)
+        group_message = {'group': groupname, 'msg_from': sender['nama'], 'msg': message}
+        
+        for receiver_username in self.group[groupname]['members']:
+            receiver = self.get_user(receiver_username)
+            message_to_send = group_message.copy()
+            message_to_send['msg_to'] = receiver['nama']
+            
+            # Add to sender's outgoing queue
+            if sender['nama'] not in sender['outgoing']:
+                sender['outgoing'][sender['nama']] = Queue()
+            sender['outgoing'][sender['nama']].put(message_to_send)
+            
+            # Add to receiver's incoming queue
+            if sender['nama'] not in receiver['incoming']:
+                receiver['incoming'][sender['nama']] = Queue()
+            receiver['incoming'][sender['nama']].put(message_to_send)
+        
         return {'status': 'OK', 'message': 'Message sent to group'}
     
     def get_group_member(self, groupname):
@@ -263,12 +270,6 @@ class Chat:
 #     create_group_response = chatserver.proses(f"creategroup {sessionid} group1")
 #     print(create_group_response)
 
-#     show_group_response = chatserver.proses("showgroup")
-#     print(show_group_response)
-
-#     get_group_member_response = chatserver.proses("getgroupmember group1")
-#     print(get_group_member_response)
-
 #     auth2_response = chatserver.proses("auth henderson surabaya alpha")
 #     sessionid2 = auth2_response['tokenid']
 #     print(auth2_response)
@@ -276,9 +277,8 @@ class Chat:
 #     join_group_response = chatserver.proses(f"joingroup {sessionid2} group1")
 #     print(join_group_response)
 
-#     show_group_response = chatserver.proses("showgroup")
-#     print(show_group_response)
+#     send_group_message_response = chatserver.proses(f"sendgroup {sessionid2} group1 Hello, group1")
+#     print(send_group_message_response)
 
-#     get_group_member_response = chatserver.proses("getgroupmember group1")
-#     print(get_group_member_response)
-
+#     inbox_response = chatserver.proses(f"inbox {sessionid}")
+#     print(inbox_response)
