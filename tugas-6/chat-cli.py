@@ -27,6 +27,9 @@ class ChatClient:
             elif command == 'logout':
                 return self.logout()
             
+            elif command == 'getsessiondetails':
+                return self.get_session_details()
+            
             elif command == 'send':
                 usernameto = j[1].strip()
                 message = " ".join(j[2:])
@@ -35,8 +38,29 @@ class ChatClient:
             elif command == 'inbox':
                 return self.inbox()
             
-            elif command == 'getsessiondetails':
-                return self.get_session_details()
+            elif command == 'creategroup':
+                groupname = j[1].strip()
+                return self.create_group(groupname)
+            
+            elif command == 'joingroup':
+                groupname = j[1].strip()
+                return self.join_group(groupname)
+            
+            elif command == 'leavegroup':
+                groupname = j[1].strip()
+                return self.leave_group(groupname)
+            
+            elif command == 'sendgroup':
+                groupname = j[1].strip()
+                message = " ".join(j[2:])
+                return self.send_group_message(groupname, message)
+            
+            elif command == 'showgroup':
+                return self.show_group()
+            
+            elif command == 'getgroupmember':
+                groupname = j[1].strip()
+                return self.get_group_members(groupname)
 
             else:
                 return "*Maaf, command tidak benar"
@@ -112,6 +136,54 @@ class ChatClient:
         result = self.send_string(string)
         if result['status'] == 'OK':
             return json.dumps(result['messages'])
+        else:
+            return f"Error, {result['message']}"
+        
+    def create_group(self, groupname):
+        if not self.tokenid:
+            return "Error, not authorized"
+        string = f"creategroup {self.tokenid} {groupname} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Group {groupname} created"
+        else:
+            return f"Error, {result['message']}"
+        
+    def join_group(self, groupname):
+        if not self.tokenid:
+            return "Error, not authorized"
+        string = f"joingroup {self.tokenid} {groupname} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Joined group {groupname}"
+        else:
+            return f"Error, {result['message']}"
+        
+    def leave_group(self, groupname):
+        if not self.tokenid:
+            return "Error, not authorized"
+        string = f"leavegroup {self.tokenid} {groupname} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Left group {groupname}"
+        else:
+            return f"Error, {result['message']}"
+        
+    def send_group_message(self, groupname, message):
+        if not self.tokenid:
+            return "Error, not authorized"
+        string = f"sendgroup {self.tokenid} {groupname} {message} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Message sent to group {groupname}"
+        else:
+            return f"Error, {result['message']}"
+        
+    def get_group_members(self, groupname):
+        string = f"getgroupmember {groupname} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['members'])
         else:
             return f"Error, {result['message']}"
 
