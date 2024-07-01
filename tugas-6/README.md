@@ -1,1 +1,1 @@
-[] group realm chat
+[] check connectrealms functionality

@@ -61,6 +61,16 @@ class ChatClient:
             elif command == 'getgroupmember':
                 groupname = j[1].strip()
                 return self.get_group_members(groupname)
+            
+            elif command == 'connectrealms':
+                alpha_address = j[1].strip()
+                alpha_port = int(j[2].strip())
+                beta_address = j[3].strip()
+                beta_port = int(j[4].strip())
+                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
+
+            elif command == 'getallsessions':
+                return self.get_all_sessions()
 
             else:
                 return "*Maaf, command tidak benar"
@@ -187,6 +197,22 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
 
+    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
+        string = f"connectrealms {alpha_address} {alpha_port} {beta_address} {beta_port} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return "Connection established between alpha and beta servers"
+        else:
+            return f"Error, {result['message']}"
+
+    def get_all_sessions(self):
+        string = "getallsessions \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['sessions'])
+        else:
+            return f"Error, {result['message']}"
+
 if __name__ == "__main__":
     realm = input("Choose realm (alpha/beta): ")
     target_ip = "127.0.0.1"
@@ -203,4 +229,3 @@ if __name__ == "__main__":
     while True:
         cmdline = input(f"Command {cc.tokenid}: ")
         print(cc.proses(cmdline))
-    
