@@ -128,6 +128,12 @@ class Chat:
     def get_user(self, username):
         return self.users.get(username, False)
     
+    def get_session_details(self, sessionid):
+        if sessionid in self.sessions:
+            return {'status': 'OK', 'session': self.sessions[sessionid]}
+        else:
+            return {'status': 'ERROR', 'message': 'Session not found'}
+        
     def send_message(self, sessionid, username_from, username_dest, message):
         if sessionid not in self.sessions:
             return {'status': 'ERROR', 'message': 'Session not found'}
@@ -158,8 +164,3 @@ class Chat:
                 msgs[user].append(incoming[user].get_nowait())
         return {'status': 'OK', 'messages': msgs}
     
-    def get_session_details(self, sessionid):
-        if sessionid in self.sessions:
-            return {'status': 'OK', 'session': self.sessions[sessionid]}
-        else:
-            return {'status': 'ERROR', 'message': 'Session not found'}

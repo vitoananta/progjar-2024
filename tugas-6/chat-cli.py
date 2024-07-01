@@ -86,6 +86,14 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
     
+    def get_session_details(self):
+        string = f"getsessiondetails {self.tokenid} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['session'])
+        else:
+            return f"Error, {result['message']}"
+        
     def send_message(self, usernameto="", message=""):
         if not self.tokenid:
             return "Error, not authorized"
@@ -104,14 +112,6 @@ class ChatClient:
         result = self.send_string(string)
         if result['status'] == 'OK':
             return json.dumps(result['messages'])
-        else:
-            return f"Error, {result['message']}"
-        
-    def get_session_details(self):
-        string = f"getsessiondetails {self.tokenid} \r\n"
-        result = self.send_string(string)
-        if result['status'] == 'OK':
-            return json.dumps(result['session'])
         else:
             return f"Error, {result['message']}"
 
