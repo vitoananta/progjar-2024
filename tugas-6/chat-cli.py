@@ -1,220 +1,134 @@
 import socket
 import json
-from chat import Chat
 
 class ChatClient:
-    def __init__(self, TARGET_IP, TARGET_PORT):
+    def __init__(self, target_ip, target_port, realm):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_address = (TARGET_IP,TARGET_PORT)
+        self.server_address = (target_ip, target_port)
         self.sock.connect(self.server_address)
-        self.tokenid=""
+        self.tokenid = ""
+        self.realm = realm
 
-    def proses(self,cmdline):
-        j=cmdline.split(" ")
+    def proses(self, cmdline):
+        j = cmdline.split(" ")
         try:
-            command=j[0].strip()
-            if (command=='auth'):
-                username=j[1].strip()
-                password=j[2].strip()
-                return self.login(username,password)
+            command = j[0].strip()
+            if command == 'auth':
+                username = j[1].strip()
+                password = j[2].strip()
+                return self.login(username, password)
             
-            if (command=='register'):
-                username=j[1].strip()
-                password=j[2].strip()
-                nama=j[3].strip()
-                negara=j[4].strip()
-                return self.register(username, password, nama, negara)
+            if command == 'register':
+                username = j[1].strip()
+                password = j[2].strip()
+                nama = j[3].strip()
+                return self.register(username, password, nama)
              
-            elif (command=='logout'):
+            elif command == 'logout':
                 return self.logout()
             
-            elif (command=='send'):
+            elif command == 'send':
                 usernameto = j[1].strip()
-                message=""
-                for w in j[2:]:
-                    message="{} {}" . format(message,w)
-                return self.send_message(usernameto,message)
+                message = " ".join(j[2:])
+                return self.send_message(usernameto, message)
             
-            elif (command=='inbox'):
+            elif command == 'inbox':
                 return self.inbox()
-
-            elif (command=='creategroup'):
-                groupname = j[1].strip()
-                return self.create_group(groupname)
             
-            elif (command=='joingroup'):
-                groupname = j[1].strip()
-                return self.join_group(groupname)
-            
-            elif command == "joingrouprealm":
-                realmid = j[1].strip()
-                groupname = j[2].strip()
-                return self.join_group_realm(realmid, groupname)
+            elif command == 'getsessiondetails':
+                return self.get_session_details()
 
-            elif (command=='sendgroup'):
-                groupname = j[1].strip()
-                message=""
-                for w in j[2:]:
-                    message="{} {}" . format(message,w)
-                return self.send_group_message(groupname,message)
-
-            elif command == "addrealm":
-                realmid = j[1].strip()
-                realm_address = j[2].strip()
-                realm_port = j[3].strip()
-                return self.add_realm(realmid, realm_address, realm_port)
-
-            elif command == "sendrealm":
-                realmid = j[1].strip()
-                username_to = j[2].strip()
-                message = ""
-                for w in j[3:]:
-                    message = "{} {}".format(message, w)
-                return self.send_realm_message(realmid, username_to, message)
-            
-            elif command == "listmembers":
-                groupname = j[1].strip()
-                return self.list_members(groupname)
-            
             else:
                 return "*Maaf, command tidak benar"
         except IndexError:
             return "-Maaf, command tidak benar"
 
-    def sendstring(self,string):
+    def send_string(self, string):
         try:
             self.sock.sendall(string.encode())
-            receivemsg = ""
+            receive_msg = ""
             while True:
                 data = self.sock.recv(32)
-                print("diterima dari server",data)
-                if (data):
-                    receivemsg = "{}{}" . format(receivemsg,data.decode())  #data harus didecode agar dapat di operasikan dalam bentuk string
-                    if receivemsg[-4:]=='\r\n\r\n':
-                        print("end of string")
-                        return json.loads(receivemsg)
-        except:
+                print("Received from server:", data)
+                if data:
+                    receive_msg += data.decode()  # Data must be decoded to operate as a string
+                    if receive_msg[-4:] == '\r\n\r\n':
+                        print("End of string")
+                        return json.loads(receive_msg)
+        except Exception as e:
+            print(f"Error: {e}")
             self.sock.close()
-            return { 'status' : 'ERROR', 'message' : 'Gagal'}
+            return {'status': 'ERROR', 'message': 'Failed'}
 
-    def login(self,username,password):
-        string="auth {} {} \r\n" . format(username,password)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            self.tokenid=result['tokenid']
-            return "username {} logged in, token {} " .format(username,self.tokenid)
+    def login(self, username, password):
+        string = f"auth {username} {password} {self.realm} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            self.tokenid = result['tokenid']
+            return f"Username {username} logged in, token {self.tokenid}"
         else:
-            return "Error, {}" . format(result['message'])
+            return f"Error, {result['message']}"
     
-    def register(self,username,password, nama, negara):
-        string="register {} {} {} {}\r\n" . format(username,password, nama, negara)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            self.tokenid=result['tokenid']
-            return "username {} register in, token {} " .format(username,self.tokenid)
+    def register(self, username, password, nama):
+        string = f"register {username} {password} {nama}\r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Username {username} registered"
         else:
-            return "Error, {}" . format(result['message'])
+            return f"Error, {result['message']}"
         
     def logout(self):   
-        string="logout {}\r\n".format(self.tokenid)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            self.tokenid=""
-            return "Logout Berhasil"
+        string = f"logout {self.tokenid}\r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            self.tokenid = ""
+            return "Logout successful"
         else:
-            return "Error, {}" . format(result['message'])
+            return f"Error, {result['message']}"
     
-    def send_message(self,usernameto="xxx",message="xxx"):
-        if (self.tokenid==""):
+    def send_message(self, usernameto="", message=""):
+        if not self.tokenid:
             return "Error, not authorized"
-        string="send {} {} {} \r\n" . format(self.tokenid,usernameto,message)
+        string = f"send {self.tokenid} {usernameto} {message} \r\n"
         print(string)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            return "message sent to {}" . format(usernameto)
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Message sent to {usernameto}"
         else:
-            return "Error, {}" . format(result['message'])
+            return f"Error, {result['message']}"
         
     def inbox(self):
-        if (self.tokenid==""):
+        if not self.tokenid:
             return "Error, not authorized"
-        string="inbox {} \r\n" . format(self.tokenid)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            return "{}" . format(json.dumps(result['messages']))
+        string = f"inbox {self.tokenid} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['messages'])
         else:
-            return "Error, {}" . format(result['message'])
+            return f"Error, {result['message']}"
+        
+    def get_session_details(self):
+        string = f"getsessiondetails {self.tokenid} \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['session'])
+        else:
+            return f"Error, {result['message']}"
 
-    def create_group(self, groupname):
-        string="creategroup {} {} \r\n".format(self.tokenid, groupname)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            return "Group {} added".format(groupname)
+if __name__ == "__main__":
+    realm = input("Choose realm (alpha/beta): ")
+    target_ip = "127.0.0.1"
+    if realm == "alpha":
+        target_port = 8889
+    elif realm == "beta":
+        target_port = 8890
+    else:
+        print("Realm not found")
+        exit()
+
+    cc = ChatClient(target_ip, target_port, realm)
     
-    def join_group(self, groupname):
-        string="joingroup {} {} \r\n".format(self.tokenid, groupname)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            return "Group {} added".format(groupname)
-        
-    def join_group_realm(self, realmid, groupname):
-        string = "joingrouprealm {} {} {} \r\n".format(self.tokenid, realmid, groupname)
-        result = self.sendstring(string)
-        if result["status"] == "OK":
-            return "Group {} added".format(groupname)
-        else:
-            return "Error, {}".format(result["message"])
-
-    def send_group_message(self,groupname="xxx",message="xxx"):
-        if (self.tokenid==""):
-            return "Error, not authorized"
-        string="sendgroup {} {} {} \r\n" . format(self.tokenid,groupname,message)
-        print(string)
-        result = self.sendstring(string)
-        if result['status']=='OK':
-            return "message sent to {}" . format(groupname)
-        else:
-            return "Error, {}" . format(result['message'])
-        
-    def add_realm(self, realmid, realm_address, realm_port):
-        if self.tokenid == "":
-            return "Error, not authorized"
-        string = "addrealm {} {} {} \r\n".format(realmid, realm_address, realm_port)
-        result = self.sendstring(string)
-        if result["status"] == "OK":
-            return "Realm {} added".format(realmid)
-        else:
-            return "Error, {}".format(result["message"])
-        
-    def send_realm_message(self, realmid, username_to, message):
-        if self.tokenid == "":
-            return "Error, not authorized"
-        string = "sendrealm {} {} {} {}\r\n".format(
-            self.tokenid, realmid, username_to, message
-        )
-        result = self.sendstring(string)
-        if result["status"] == "OK":
-            return "Message sent to realm {}".format(realmid)
-        else:
-            return "Error, {}".format(result["message"])
-        
-    def list_members(self, groupname):
-        if self.tokenid == "":
-            return "Error, not authorized"
-        string = "listmembers {} {} \r\n".format(self.tokenid, groupname)
-        result = self.sendstring(string)
-        if result["status"] == "OK":
-            return "Members of group {}: {}".format(groupname, result["members"])
-        else:
-            return "Error, {}".format(result["message"])
-
-if __name__=="__main__":
-    TARGET_IP = input("Berikan target IP (misal, 127.0.0.1): ")
-    TARGET_PORT = int(input("Berikan target port (misal, 8889): "))
-
-    cc = ChatClient(TARGET_IP, TARGET_PORT)
-    c = Chat()
-
     while True:
-        cmdline = input("Command {}:" . format(cc.tokenid))
+        cmdline = input(f"Command {cc.tokenid}: ")
         print(cc.proses(cmdline))
+    

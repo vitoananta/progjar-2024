@@ -52,8 +52,15 @@ class Server(threading.Thread):
             self.the_clients.append(clt)
 
 def main():
-    host = input("Berikan IP untuk listening (misal, 0.0.0.0): ")
-    port = int(input("Berikan port untuk listening (misal, 8889): "))
+    realm = input("Pilih salah satu realm (alpha/beta):")
+    host = "0.0.0.0"
+    if realm == "alpha":
+        port = 8889
+    elif realm == "beta":
+        port = 8890
+    else:
+        print("Realm tidak ditemukan")
+        return
     print("Server berjalan pada {} port {}".format(host, port))
     svr = Server(host, port)
     svr.start()
