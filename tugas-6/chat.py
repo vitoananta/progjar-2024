@@ -30,21 +30,28 @@ class RealmThreadCommunication(threading.Thread):
             self.sock.close()
             return {'status': 'ERROR', 'message': 'Failed'}
 
+    def run(self):
+        while True:
+            # Handle cross-realm messages
+            for username, queue in self.chat.items():
+                while not queue.empty():
+                    message = queue.get()
+                    self.send_string(json.dumps(message) + "\r\n\r\n")
+
     def put(self, message):
         dest = message["msg_to"]
         if dest not in self.chat:
             self.chat[dest] = Queue()
         self.chat[dest].put(message)
 
-
 class Chat:
     def __init__(self):
         self.sessions = {}
         self.users = {}
         self.group = {}
-        self.users['messi'] = {'nama': 'Lionel Messi', 'password': 'surabaya', 'incoming': {}, 'outgoing': {}}
-        self.users['henderson'] = {'nama': 'Jordan Henderson', 'password': 'surabaya', 'incoming': {}, 'outgoing': {}}
-        self.users['lineker'] = {'nama': 'Gary Lineker', 'password': 'surabaya', 'incoming': {}, 'outgoing': {}}
+        self.users['messi'] = {'nama': 'Lionel Messi', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
+        self.users['henderson'] = {'nama': 'Jordan Henderson', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
+        self.users['lineker'] = {'nama': 'Gary Lineker', 'password': 'surabaya', 'realm': 'beta', 'incoming': {}, 'outgoing': {}}
         self.realm_communication_threads = []
 
     def proses(self, data):
@@ -62,8 +69,9 @@ class Chat:
                 username = j[1].strip()
                 password = j[2].strip()
                 nama = j[3].strip()
+                realm = j[4].strip()
                 logging.warning(f"REGISTER: register {username} {password}")
-                return self.register_user(username, password, nama)
+                return self.register_user(username, password, nama, realm)
 
             elif command == 'logout':
                 sessionid = j[1].strip()
@@ -122,13 +130,6 @@ class Chat:
                 groupname = j[1].strip()
                 return self.get_group_member(groupname)
 
-            elif command == 'connectrealms':
-                alpha_address = j[1].strip()
-                alpha_port = int(j[2].strip())
-                beta_address = j[3].strip()
-                beta_port = int(j[4].strip())
-                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
-
             else:
                 logging.warning(command)
                 return {"status": "ERROR", "message": "**Invalid protocol"}
@@ -146,13 +147,14 @@ class Chat:
         self.sessions[tokenid] = {'username': username, 'userdetail': self.users[username], 'userrealm': realm}
         return {'status': 'OK', 'tokenid': tokenid}
 
-    def register_user(self, username, password, nama):
+    def register_user(self, username, password, nama, realm):
         if username in self.users:
             return {'status': 'ERROR', 'message': 'User already exists'}
         nama = nama.replace("_", " ")
         self.users[username] = {
             'nama': nama,
             'password': password,
+            'realm': realm,
             'incoming': {},
             'outgoing': {}
         }
@@ -232,6 +234,12 @@ class Chat:
         if sender['nama'] not in inqueue_receiver:
             inqueue_receiver[sender['nama']] = Queue()
         inqueue_receiver[sender['nama']].put(message)
+
+        # Check if message should be sent to another realm
+        if self.sessions[sessionid]['userrealm'] != receiver['realm']:
+            for rtc in self.realm_communication_threads:
+                rtc.put(message)
+
         return {'status': 'OK', 'message': 'Message sent'}
 
     def get_inbox(self, username):
@@ -303,6 +311,11 @@ class Chat:
                 receiver['incoming'][sender['nama']] = Queue()
             receiver['incoming'][sender['nama']].put(message_to_send)
 
+            # Check if message should be sent to another realm
+            if self.sessions[sessionid]['userrealm'] != receiver['realm']:
+                for rtc in self.realm_communication_threads:
+                    rtc.put(message)
+
         return {'status': 'OK', 'message': 'Message sent to group'}
 
     def get_group_member(self, groupname):
@@ -310,33 +323,3 @@ class Chat:
             return {'status': 'OK', 'members': self.group[groupname]['members']}
         else:
             return {'status': 'ERROR', 'message': 'Group not found'}
-
-    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
-        try:
-            alpha_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            alpha_socket.connect((alpha_address, alpha_port))
-            alpha_socket.close()
-        except Exception as e:
-            logging.error(f"Failed to connect to alpha server: {e}")
-            return {'status': 'ERROR', 'message': 'Alpha server is not up'}
-
-        try:
-            beta_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            beta_socket.connect((beta_address, beta_port))
-            beta_socket.close()
-        except Exception as e:
-            logging.error(f"Failed to connect to beta server: {e}")
-            return {'status': 'ERROR', 'message': 'Beta server is not up'}
-
-        # Both servers are up, establish communication threads
-        alpha_communication_thread = RealmThreadCommunication(self, alpha_address, alpha_port)
-        beta_communication_thread = RealmThreadCommunication(self, beta_address, beta_port)
-        
-        alpha_communication_thread.start()
-        beta_communication_thread.start()
-        
-        self.realm_communication_threads.append(alpha_communication_thread)
-        self.realm_communication_threads.append(beta_communication_thread)
-
-        return {'status': 'OK', 'message': 'Connection established between alpha and beta servers'}
-
