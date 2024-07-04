@@ -70,6 +70,8 @@ class Chat:
                 return self.logout(sessionid)
             
             elif command == 'getallsessions':
+                sessionid = j[1].strip()
+                logging.warning(f"GETALLSESSIONS: {sessionid}")
                 return self.get_all_sessions()
 
             elif command == 'getdetailsession':
@@ -167,11 +169,48 @@ class Chat:
         return self.users.get(username, False)
     
     def get_all_sessions(self):
-        return {'status': 'OK', 'sessions': self.sessions}
+        def convert_queues(obj):
+            if isinstance(obj, Queue):
+                return list(obj.queue)
+            elif isinstance(obj, dict):
+                return {k: convert_queues(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_queues(i) for i in obj]
+            else:
+                return obj
+        
+        sessions_copy = {}
+        for session_id, session_data in self.sessions.items():
+            session_data_copy = {
+                'username': session_data['username'],
+                'userdetail': convert_queues(session_data['userdetail']),
+                'userrealm': session_data['userrealm']
+            }
+            sessions_copy[session_id] = session_data_copy
+        
+        return {'status': 'OK', 'sessions': sessions_copy}
+
+
 
     def get_detail_session(self, sessionid):
+        def convert_queues(obj):
+            if isinstance(obj, Queue):
+                return list(obj.queue)
+            elif isinstance(obj, dict):
+                return {k: convert_queues(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_queues(i) for i in obj]
+            else:
+                return obj
+        
         if sessionid in self.sessions:
-            return {'status': 'OK', 'session': self.sessions[sessionid]}
+            session_data = self.sessions[sessionid]
+            session_data_copy = {
+                'username': session_data['username'],
+                'userdetail': convert_queues(session_data['userdetail']),
+                'userrealm': session_data['userrealm']
+            }
+            return {'status': 'OK', 'session': session_data_copy}
         else:
             return {'status': 'ERROR', 'message': 'Session not found'}
 
