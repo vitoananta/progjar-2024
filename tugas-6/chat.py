@@ -30,14 +30,6 @@ class RealmThreadCommunication(threading.Thread):
             self.sock.close()
             return {'status': 'ERROR', 'message': 'Failed'}
 
-    def run(self):
-        while True:
-            # Handle cross-realm messages
-            for username, queue in self.chat.items():
-                while not queue.empty():
-                    message = queue.get()
-                    self.send_string(json.dumps(message) + "\r\n\r\n")
-
     def put(self, message):
         dest = message["msg_to"]
         if dest not in self.chat:
@@ -237,11 +229,6 @@ class Chat:
             inqueue_receiver[sender['nama']] = Queue()
         inqueue_receiver[sender['nama']].put(message)
 
-        # Check if message should be sent to another realm
-        if self.sessions[sessionid]['userrealm'] != receiver['realm']:
-            for rtc in self.realm_communication_threads:
-                rtc.put(message)
-
         return {'status': 'OK', 'message': 'Message sent'}
 
     def get_inbox(self, username):
@@ -312,11 +299,6 @@ class Chat:
             if sender['nama'] not in receiver['incoming']:
                 receiver['incoming'][sender['nama']] = Queue()
             receiver['incoming'][sender['nama']].put(message_to_send)
-
-            # Check if message should be sent to another realm
-            if self.sessions[sessionid]['userrealm'] != receiver['realm']:
-                for rtc in self.realm_communication_threads:
-                    rtc.put(message)
 
         return {'status': 'OK', 'message': 'Message sent to group'}
 
