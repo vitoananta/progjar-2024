@@ -128,7 +128,7 @@ class Chat:
                 alpha_port = int(j[2].strip())
                 beta_address = j[3].strip()
                 beta_port = int(j[4].strip())
-                return self.check_and_establish_realm_connection(alpha_address, alpha_port, beta_address, beta_port)
+                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
 
             else:
                 logging.warning(command)
@@ -315,7 +315,7 @@ class Chat:
         else:
             return {'status': 'ERROR', 'message': 'Group not found'}
 
-    def check_and_establish_realm_connection(self, alpha_address, alpha_port, beta_address, beta_port):
+    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
         try:
             alpha_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             alpha_socket.connect((alpha_address, alpha_port))
