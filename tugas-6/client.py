@@ -1,6 +1,11 @@
 import socket
 import json
 
+ALPHA_ADDRESS = '127.0.0.1'
+ALPHA_PORT = 8889
+BETA_ADDRESS = '127.0.0.1'
+BETA_PORT = 8890
+
 class ChatClient:
     def __init__(self, target_ip, target_port, realm):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -63,10 +68,10 @@ class ChatClient:
                 return self.get_group_members(groupname)
             
             elif command == 'connectrealms':
-                alpha_address = j[1].strip()
-                alpha_port = int(j[2].strip())
-                beta_address = j[3].strip()
-                beta_port = int(j[4].strip())
+                alpha_address = ALPHA_ADDRESS
+                alpha_port = ALPHA_PORT
+                beta_address = BETA_ADDRESS
+                beta_port = BETA_PORT
                 return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
 
             else:
@@ -214,9 +219,9 @@ if __name__ == "__main__":
     realm = input("Choose realm (alpha/beta): ")
     target_ip = "127.0.0.1"
     if realm == "alpha":
-        target_port = 8889
+        target_port = ALPHA_PORT
     elif realm == "beta":
-        target_port = 8890
+        target_port = BETA_PORT
     else:
         print("Realm not found")
         exit()
