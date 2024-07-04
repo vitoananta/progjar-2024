@@ -143,6 +143,8 @@ class Chat:
             return {'status': 'ERROR', 'message': 'User not found'}
         if self.users[username]['password'] != password:
             return {'status': 'ERROR', 'message': 'Incorrect password'}
+        if self.users[username]['realm'] != realm:
+            return {'status': 'ERROR', 'message': 'Incorrect realm'}
         tokenid = str(uuid.uuid4())
         self.sessions[tokenid] = {'username': username, 'userdetail': self.users[username], 'userrealm': realm}
         return {'status': 'OK', 'tokenid': tokenid}
