@@ -27,7 +27,8 @@ class ChatClient:
                 username = j[1].strip()
                 password = j[2].strip()
                 nama = j[3].strip()
-                return self.register(username, password, nama)
+                realm = self.realm
+                return self.register(username, password, nama, realm)
              
             elif command == 'logout':
                 return self.logout()
@@ -105,8 +106,8 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
     
-    def register(self, username, password, nama):
-        string = f"register {username} {password} {nama}\r\n"
+    def register(self, username, password, nama, realm):
+        string = f"register {username} {password} {nama} {realm}\r\n"
         result = self.send_string(string)
         if result['status'] == 'OK':
             return f"Username {username} registered"

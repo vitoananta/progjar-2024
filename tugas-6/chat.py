@@ -62,8 +62,9 @@ class Chat:
                 username = j[1].strip()
                 password = j[2].strip()
                 nama = j[3].strip()
+                realm = j[4].strip()
                 logging.warning(f"REGISTER: register {username} {password}")
-                return self.register_user(username, password, nama)
+                return self.register_user(username, password, nama, realm)
 
             elif command == 'logout':
                 sessionid = j[1].strip()
@@ -148,13 +149,14 @@ class Chat:
         self.sessions[tokenid] = {'username': username, 'userdetail': self.users[username], 'userrealm': realm}
         return {'status': 'OK', 'tokenid': tokenid}
 
-    def register_user(self, username, password, nama):
+    def register_user(self, username, password, nama, realm):
         if username in self.users:
             return {'status': 'ERROR', 'message': 'User already exists'}
         nama = nama.replace("_", " ")
         self.users[username] = {
             'nama': nama,
             'password': password,
+            'realm': realm,
             'incoming': {},
             'outgoing': {}
         }
