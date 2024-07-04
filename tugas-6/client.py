@@ -35,8 +35,8 @@ class ChatClient:
             elif command == 'getallsessions':
                 return self.get_all_sessions()
             
-            elif command == 'getsessiondetails':
-                return self.get_session_details()
+            elif command == 'getdetailsession':
+                return self.get_detail_session()
             
             elif command == 'send':
                 usernameto = j[1].strip()
@@ -130,8 +130,8 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
     
-    def get_session_details(self):
-        string = f"getsessiondetails {self.tokenid} \r\n"
+    def get_detail_session(self):
+        string = f"getdetailsession {self.tokenid} \r\n"
         result = self.send_string(string)
         if result['status'] == 'OK':
             return json.dumps(result['session'])

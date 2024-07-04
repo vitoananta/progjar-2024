@@ -72,10 +72,10 @@ class Chat:
             elif command == 'getallsessions':
                 return self.get_all_sessions()
 
-            elif command == 'getsessiondetails':
+            elif command == 'getdetailsession':
                 sessionid = j[1].strip()
-                logging.warning(f"GETSESSIONDETAILS: {sessionid}")
-                return self.get_session_details(sessionid)
+                logging.warning(f"GETDETAILSESSION: {sessionid}")
+                return self.get_detail_session(sessionid)
 
             elif command == 'send':
                 sessionid = j[1].strip()
@@ -169,7 +169,7 @@ class Chat:
     def get_all_sessions(self):
         return {'status': 'OK', 'sessions': self.sessions}
 
-    def get_session_details(self, sessionid):
+    def get_detail_session(self, sessionid):
         if sessionid in self.sessions:
             return {'status': 'OK', 'session': self.sessions[sessionid]}
         else:
