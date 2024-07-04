@@ -84,7 +84,7 @@ class ChatClient:
             self.sock.sendall(string.encode())
             receive_msg = ""
             while True:
-                data = self.sock.recv(32)
+                data = self.sock.recv(512)
                 print("Received from server:", data)
                 if data:
                     receive_msg += data.decode()  # Data must be decoded to operate as a string

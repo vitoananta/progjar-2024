@@ -20,7 +20,7 @@ class RealmThreadCommunication(threading.Thread):
             self.sock.sendall(string.encode())
             recv_msg = ""
             while True:
-                data = self.sock.recv(32)
+                data = self.sock.recv(512)
                 if data:
                     recv_msg += data.decode()
                     if recv_msg[-4:] == '\r\n\r\n':
