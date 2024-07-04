@@ -36,6 +36,7 @@ class RealmThreadCommunication(threading.Thread):
             self.chat[dest] = Queue()
         self.chat[dest].put(message)
 
+
 class Chat:
     def __init__(self):
         self.sessions = {}
@@ -61,9 +62,8 @@ class Chat:
                 username = j[1].strip()
                 password = j[2].strip()
                 nama = j[3].strip()
-                realm = j[4].strip()
                 logging.warning(f"REGISTER: register {username} {password}")
-                return self.register_user(username, password, nama, realm)
+                return self.register_user(username, password, nama)
 
             elif command == 'logout':
                 sessionid = j[1].strip()
@@ -122,6 +122,13 @@ class Chat:
                 groupname = j[1].strip()
                 return self.get_group_member(groupname)
 
+            elif command == 'connectrealms':
+                alpha_address = j[1].strip()
+                alpha_port = int(j[2].strip())
+                beta_address = j[3].strip()
+                beta_port = int(j[4].strip())
+                return self.check_and_establish_realm_connection(alpha_address, alpha_port, beta_address, beta_port)
+
             else:
                 logging.warning(command)
                 return {"status": "ERROR", "message": "**Invalid protocol"}
@@ -136,19 +143,18 @@ class Chat:
         if self.users[username]['password'] != password:
             return {'status': 'ERROR', 'message': 'Incorrect password'}
         if self.users[username]['realm'] != realm:
-            return {'status': 'ERROR', 'message': 'Incorrect realm'}
+            return {'status': 'ERROR', 'message': 'User realm mismatch'}
         tokenid = str(uuid.uuid4())
         self.sessions[tokenid] = {'username': username, 'userdetail': self.users[username], 'userrealm': realm}
         return {'status': 'OK', 'tokenid': tokenid}
 
-    def register_user(self, username, password, nama, realm):
+    def register_user(self, username, password, nama):
         if username in self.users:
             return {'status': 'ERROR', 'message': 'User already exists'}
         nama = nama.replace("_", " ")
         self.users[username] = {
             'nama': nama,
             'password': password,
-            'realm': realm,
             'incoming': {},
             'outgoing': {}
         }
@@ -228,7 +234,6 @@ class Chat:
         if sender['nama'] not in inqueue_receiver:
             inqueue_receiver[sender['nama']] = Queue()
         inqueue_receiver[sender['nama']].put(message)
-
         return {'status': 'OK', 'message': 'Message sent'}
 
     def get_inbox(self, username):
@@ -307,3 +312,32 @@ class Chat:
             return {'status': 'OK', 'members': self.group[groupname]['members']}
         else:
             return {'status': 'ERROR', 'message': 'Group not found'}
+
+    def check_and_establish_realm_connection(self, alpha_address, alpha_port, beta_address, beta_port):
+        try:
+            alpha_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            alpha_socket.connect((alpha_address, alpha_port))
+            alpha_socket.close()
+        except Exception as e:
+            logging.error(f"Failed to connect to alpha server: {e}")
+            return {'status': 'ERROR', 'message': 'Alpha server is not up'}
+
+        try:
+            beta_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            beta_socket.connect((beta_address, beta_port))
+            beta_socket.close()
+        except Exception as e:
+            logging.error(f"Failed to connect to beta server: {e}")
+            return {'status': 'ERROR', 'message': 'Beta server is not up'}
+
+        # Both servers are up, establish communication threads
+        alpha_communication_thread = RealmThreadCommunication(self, alpha_address, alpha_port)
+        beta_communication_thread = RealmThreadCommunication(self, beta_address, beta_port)
+        
+        alpha_communication_thread.start()
+        beta_communication_thread.start()
+        
+        self.realm_communication_threads.append(alpha_communication_thread)
+        self.realm_communication_threads.append(beta_communication_thread)
+
+        return {'status': 'OK', 'message': 'Connection established between alpha and beta servers'}
