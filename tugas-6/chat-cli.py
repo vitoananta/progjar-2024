@@ -27,6 +27,9 @@ class ChatClient:
             elif command == 'logout':
                 return self.logout()
             
+            elif command == 'getallsessions':
+                return self.get_all_sessions()
+            
             elif command == 'getsessiondetails':
                 return self.get_session_details()
             
@@ -55,9 +58,6 @@ class ChatClient:
                 message = " ".join(j[2:])
                 return self.send_group_message(groupname, message)
             
-            elif command == 'showgroup':
-                return self.show_group()
-            
             elif command == 'getgroupmember':
                 groupname = j[1].strip()
                 return self.get_group_members(groupname)
@@ -68,9 +68,6 @@ class ChatClient:
                 beta_address = j[3].strip()
                 beta_port = int(j[4].strip())
                 return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
-
-            elif command == 'getallsessions':
-                return self.get_all_sessions()
 
             else:
                 return "*Maaf, command tidak benar"
@@ -117,6 +114,14 @@ class ChatClient:
         if result['status'] == 'OK':
             self.tokenid = ""
             return "Logout successful"
+        else:
+            return f"Error, {result['message']}"
+        
+    def get_all_sessions(self):
+        string = "getallsessions \r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return json.dumps(result['sessions'])
         else:
             return f"Error, {result['message']}"
     
@@ -202,14 +207,6 @@ class ChatClient:
         result = self.send_string(string)
         if result['status'] == 'OK':
             return "Connection established between alpha and beta servers"
-        else:
-            return f"Error, {result['message']}"
-
-    def get_all_sessions(self):
-        string = "getallsessions \r\n"
-        result = self.send_string(string)
-        if result['status'] == 'OK':
-            return json.dumps(result['sessions'])
         else:
             return f"Error, {result['message']}"
 

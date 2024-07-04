@@ -68,6 +68,9 @@ class Chat:
             elif command == 'logout':
                 sessionid = j[1].strip()
                 return self.logout(sessionid)
+            
+            elif command == 'getallsessions':
+                return self.get_all_sessions()
 
             elif command == 'getsessiondetails':
                 sessionid = j[1].strip()
@@ -124,9 +127,6 @@ class Chat:
                 beta_port = int(j[4].strip())
                 return self.check_and_establish_realm_connection(alpha_address, alpha_port, beta_address, beta_port)
 
-            elif command == 'getallsessions':
-                return self.get_all_sessions()
-
             else:
                 logging.warning(command)
                 return {"status": "ERROR", "message": "**Invalid protocol"}
@@ -165,6 +165,9 @@ class Chat:
 
     def get_user(self, username):
         return self.users.get(username, False)
+    
+    def get_all_sessions(self):
+        return {'status': 'OK', 'sessions': self.sessions}
 
     def get_session_details(self, sessionid):
         if sessionid in self.sessions:
@@ -297,7 +300,4 @@ class Chat:
         self.realm_communication_threads.append(beta_communication_thread)
 
         return {'status': 'OK', 'message': 'Connection established between alpha and beta servers'}
-
-    def get_all_sessions(self):
-        return {'status': 'OK', 'sessions': self.sessions}
 
