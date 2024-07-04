@@ -66,13 +66,6 @@ class ChatClient:
             elif command == 'getgroupmember':
                 groupname = j[1].strip()
                 return self.get_group_members(groupname)
-            
-            elif command == 'connectrealms':
-                alpha_address = ALPHA_ADDRESS
-                alpha_port = ALPHA_PORT
-                beta_address = BETA_ADDRESS
-                beta_port = BETA_PORT
-                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
 
             else:
                 return "*Maaf, command tidak benar"
@@ -206,14 +199,7 @@ class ChatClient:
             return json.dumps(result['members'])
         else:
             return f"Error, {result['message']}"
-
-    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
-        string = f"connectrealms {alpha_address} {alpha_port} {beta_address} {beta_port} \r\n"
-        result = self.send_string(string)
-        if result['status'] == 'OK':
-            return "Connection established between alpha and beta servers"
-        else:
-            return f"Error, {result['message']}"
+        
 
 if __name__ == "__main__":
     realm = input("Choose realm (alpha/beta): ")
