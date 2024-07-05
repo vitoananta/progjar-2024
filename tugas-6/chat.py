@@ -85,10 +85,6 @@ class Chat:
                 logging.warning(f"SENDGROUP: {sessionid} send message to group {groupname}")
                 return self.send_group_message(sessionid, groupname, message)
 
-            elif command == 'getgroupmember':
-                groupname = j[1].strip()
-                return self.get_group_member(groupname)
-
             else:
                 logging.warning(command)
                 return {"status": "ERROR", "message": "**Invalid protocol"}
@@ -294,21 +290,39 @@ class Chat:
             sender_name = message['sender_name']
             receiver_name = message['receiver_name']
             msg = message['message']
-
-            receiver_username = self.get_user_by_nama(receiver_name)
-            if not receiver_username:
-                return {'status': 'ERROR', 'message': 'Receiver not found'}
-
-            receiver = self.get_user(receiver_username)
-            group_message = {'group': groupname, 'msg_from': sender_name, 'msg_to': receiver_name, 'msg': msg}
             
-            # Add to receiver's incoming queue
-            if sender_name not in receiver['incoming']:
-                receiver['incoming'][sender_name] = Queue()
-            receiver['incoming'][sender_name].put(group_message)
+            if receiver_name:
+                receiver_username = self.get_user_by_nama(receiver_name)
+                if not receiver_username:
+                    return {'status': 'ERROR', 'message': 'Receiver not found'}
+                
+                receiver = self.get_user(receiver_username)
+                group_message = {'group': groupname, 'msg_from': sender_name, 'msg_to': receiver_name, 'msg': msg}
+                
+                if sender_name not in receiver['incoming']:
+                    receiver['incoming'][sender_name] = Queue()
+                receiver['incoming'][sender_name].put(group_message)
+            else:
+                # Broadcast to all group members
+                if groupname not in self.group:
+                    return {'status': 'ERROR', 'message': 'Group not found'}
+                
+                group_message = {'group': groupname, 'msg_from': sender_name, 'msg': msg}
+                
+                for member in self.group[groupname]['members']:
+                    if member != sender_name:
+                        receiver = self.get_user(member)
+                        message_to_send = group_message.copy()
+                        message_to_send['msg_to'] = receiver['nama']
+                        
+                        if sender_name not in receiver['incoming']:
+                            receiver['incoming'][sender_name] = Queue()
+                        receiver['incoming'][sender_name].put(message_to_send)
+            
             return {'status': 'OK', 'message': 'Group message received'}
-            
+        
         return {'status': 'ERROR', 'message': 'Invalid command'}
+
 
 
     def leave_group(self, sessionid, groupname):
@@ -325,6 +339,12 @@ class Chat:
         if sessionid not in self.sessions:
             return {'status': 'ERROR', 'message': 'Session not found'}
         if groupname not in self.group:
+            # Try to forward the message to the other realm if the group is not found
+            if self.realm_connector:
+                sender = self.get_user(self.sessions[sessionid]['username'])
+                return self.realm_connector.send_cross_realm_group_message(
+                    groupname, sender['nama'], None, message
+                )
             return {'status': 'ERROR', 'message': 'Group not found'}
         if self.sessions[sessionid]['username'] not in self.group[groupname]['members']:
             return {'status': 'ERROR', 'message': 'Not a member'}
@@ -359,21 +379,21 @@ class Chat:
         try:
             if not self.connection:
                 return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            
             message = json.dumps({
                 'command': 'crossrealm_sendgroup',
                 'groupname': groupname,
                 'sender_name': sender_name,
-                'receiver_name': receiver_name,
+                'receiver_name': receiver_name,  # Allow null to broadcast to all members
                 'message': message
             }) + "\r\n"
+            
             self.connection.sendall(message.encode())
-            return {'status': 'OK', 'message': 'Message sent to other realm'}
+            
+            # Wait for response
+            response = self.connection.recv(512).decode().strip()
+            return json.loads(response)
+            
         except Exception as e:
             logging.error(f"Failed to send group message to other realm: {e}")
             return {'status': 'ERROR', 'message': 'Failed to send group message to other realm'}
-
-    def get_group_member(self, groupname):
-        if groupname in self.group:
-            return {'status': 'OK', 'members': self.group[groupname]['members']}
-        else:
-            return {'status': 'ERROR', 'message': 'Group not found'}

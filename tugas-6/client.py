@@ -63,10 +63,6 @@ class ChatClient:
                 groupname = j[1].strip()
                 message = " ".join(j[2:])
                 return self.send_group_message(groupname, message)
-            
-            elif command == 'getgroupmember':
-                groupname = j[1].strip()
-                return self.get_group_members(groupname)
 
             else:
                 return "*Maaf, command tidak benar"
@@ -209,14 +205,6 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
         
-    def get_group_members(self, groupname):
-        string = f"getgroupmember {groupname} \r\n"
-        result = self.send_string(string)
-        if result['status'] == 'OK':
-            return json.dumps(result['members'])
-        else:
-            return f"Error, {result['message']}"
-
 if __name__ == "__main__":
     realm = input("Choose realm (alpha/beta): ")
     target_ip = "127.0.0.1"
