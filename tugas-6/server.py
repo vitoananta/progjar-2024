@@ -24,8 +24,10 @@ class ProcessTheClient(threading.Thread):
                     logging.warning("data dari client: {}".format(rcv))
                     try:
                         message = json.loads(rcv.strip())
-                        if 'command' in message and message['command'] == 'crossrealm_send':
-                            hasil = json.dumps(self.chatserver.send_message_cross_realm(message))
+                        command = message.get('command', '')
+                        if command.startswith('crossrealm_'):
+                            command = command.replace('crossrealm_', '')
+                            hasil = json.dumps(self.chatserver.proses_crossrealm(command, message))
                         else:
                             hasil = json.dumps(self.chatserver.proses(rcv))
                     except json.JSONDecodeError:
@@ -37,6 +39,7 @@ class ProcessTheClient(threading.Thread):
             else:
                 break
         self.connection.close()
+
 
 
 class Server(threading.Thread):
@@ -108,6 +111,23 @@ class RealmConnector(threading.Thread):
         except Exception as e:
             logging.error(f"Failed to send message to other realm: {e}")
             return {'status': 'ERROR', 'message': 'Failed to send message to other realm'}
+        
+    def forward_group_command(self, command, username, groupname):
+        try:
+            if not self.connection:
+                return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            message = json.dumps({
+                'command': 'crossrealm_' + command,
+                'username': username,
+                'groupname': groupname
+            }) + "\r\n"
+            self.connection.sendall(message.encode())
+            # Wait for response
+            response = self.connection.recv(512).decode()
+            return json.loads(response.strip())
+        except Exception as e:
+            logging.error(f"Failed to forward group command to other realm: {e}")
+            return {'status': 'ERROR', 'message': 'Failed to forward group command to other realm'}
 
 
 def main():

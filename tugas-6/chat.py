@@ -255,12 +255,35 @@ class Chat:
     def join_group(self, sessionid, groupname):
         if sessionid not in self.sessions:
             return {'status': 'ERROR', 'message': 'Session not found'}
+    
+        # Check if the group exists in the current realm
         if groupname not in self.group:
-            return {'status': 'ERROR', 'message': 'Group not found'}
+            # Assume the group exists in the other realm
+            if self.realm_connector:
+                username = self.sessions[sessionid]['username']
+                return self.realm_connector.forward_group_command('joingroup', username, groupname)
+            else:
+                return {'status': 'ERROR', 'message': 'Group not found'}
+        
         if self.sessions[sessionid]['username'] in self.group[groupname]['members']:
             return {'status': 'ERROR', 'message': 'Already a member'}
         self.group[groupname]['members'].append(self.sessions[sessionid]['username'])
         return {'status': 'OK', 'message': 'Joined group'}
+    
+
+    def proses_crossrealm(self, command, message):
+        username = message['username']
+        groupname = message['groupname']
+        if command == 'joingroup':
+            if groupname in self.group:
+                if username in self.group[groupname]['members']:
+                    return {'status': 'ERROR', 'message': 'Already a member'}
+                self.group[groupname]['members'].append(username)
+                return {'status': 'OK', 'message': 'Joined group'}
+            else:
+                return {'status': 'ERROR', 'message': 'Group not found'}
+        # Add other group-related commands if needed
+        return {'status': 'ERROR', 'message': 'Invalid command'}
 
     def leave_group(self, sessionid, groupname):
         if sessionid not in self.sessions:
