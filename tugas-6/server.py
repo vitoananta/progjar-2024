@@ -3,7 +3,9 @@ import socket
 import threading
 import json
 import logging
+import time
 from chat import Chat
+
 chatserver = Chat()
 
 class ProcessTheClient(threading.Thread):
@@ -51,19 +53,52 @@ class Server(threading.Thread):
             clt.start()
             self.the_clients.append(clt)
 
+class RealmConnector(threading.Thread):
+    def __init__(self, host, port, target_host, target_port):
+        self.host = host
+        self.port = port
+        self.target_host = target_host
+        self.target_port = target_port
+        self.connection = None
+        threading.Thread.__init__(self)
+
+    def run(self):
+        while True:
+            try:
+                self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.connection.connect((self.target_host, self.target_port))
+                logging.warning("Connected to target realm at {}:{}".format(self.target_host, self.target_port))
+                return  # Exit the thread once connected
+            except Exception as e:
+                logging.warning("Failed to connect to target realm: {}. Retrying...".format(e))
+                self.connection.close()
+                self.connection = None
+                time.sleep(5)
+
 def main():
     realm = input("Pilih salah satu realm (alpha/beta):")
     host = "0.0.0.0"
     if realm == "alpha":
         port = 9993
+        target_host = "localhost"
+        target_port = 8889
     elif realm == "beta":
         port = 8889
+        target_host = "localhost"
+        target_port = 9993
     else:
         print("Realm tidak ditemukan")
         return
+
     print("Server berjalan pada {} port {}".format(host, port))
     svr = Server(host, port)
     svr.start()
+
+    while True:
+        cmd = input("Type 'connect' to try to connect to the other realm: ")
+        if cmd == "connect":
+            connector = RealmConnector(host, port, target_host, target_port)
+            connector.start()
 
 if __name__ == "__main__":
     main()
