@@ -201,14 +201,6 @@ class ChatClient:
         else:
             return f"Error, {result['message']}"
 
-    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
-        string = f"connectrealms {alpha_address} {alpha_port} {beta_address} {beta_port} \r\n"
-        result = self.send_string(string)
-        if result['status'] == 'OK':
-            return "Connection established between alpha and beta servers"
-        else:
-            return f"Error, {result['message']}"
-
 if __name__ == "__main__":
     realm = input("Choose realm (alpha/beta): ")
     target_ip = "127.0.0.1"
