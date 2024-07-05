@@ -10,7 +10,6 @@ class Chat:
         self.users['messi'] = {'nama': 'Lionel Messi', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
         self.users['henderson'] = {'nama': 'Jordan Henderson', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
         self.users['lineker'] = {'nama': 'Gary Lineker', 'password': 'surabaya', 'realm': 'beta', 'incoming': {}, 'outgoing': {}}
-        self.realm_communication_threads = []
 
     def proses(self, data):
         j = data.split(" ")
