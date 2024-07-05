@@ -128,6 +128,24 @@ class RealmConnector(threading.Thread):
         except Exception as e:
             logging.error(f"Failed to forward group command to other realm: {e}")
             return {'status': 'ERROR', 'message': 'Failed to forward group command to other realm'}
+        
+    def send_cross_realm_group_message(self, groupname, sender_name, receiver_name, message):
+        try:
+            if not self.connection:
+                return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            message = json.dumps({
+                'command': 'crossrealm_sendgroup',
+                'groupname': groupname,
+                'sender_name': sender_name,
+                'receiver_name': receiver_name,
+                'message': message
+            }) + "\r\n"
+            self.connection.sendall(message.encode())
+            return {'status': 'OK', 'message': 'Message sent to other realm'}
+        except Exception as e:
+            logging.error(f"Failed to send group message to other realm: {e}")
+            return {'status': 'ERROR', 'message': 'Failed to send group message to other realm'}
+
 
 
 def main():

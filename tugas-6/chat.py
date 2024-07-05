@@ -1,5 +1,6 @@
 import logging
 import uuid
+import json
 from queue import Queue
 
 class Chat:
@@ -129,6 +130,12 @@ class Chat:
 
     def get_user(self, username):
         return self.users.get(username, False)
+    
+    def get_user_by_nama(self, nama):
+        for username, user in self.users.items():
+            if user['nama'] == nama:
+                return username
+        return False
     
     def get_all_sessions(self):
         def convert_queues(obj):
@@ -272,9 +279,9 @@ class Chat:
     
 
     def proses_crossrealm(self, command, message):
-        username = message['username']
-        groupname = message['groupname']
         if command == 'joingroup':
+            username = message['username']
+            groupname = message['groupname']
             if groupname in self.group:
                 if username in self.group[groupname]['members']:
                     return {'status': 'ERROR', 'message': 'Already a member'}
@@ -282,8 +289,27 @@ class Chat:
                 return {'status': 'OK', 'message': 'Joined group'}
             else:
                 return {'status': 'ERROR', 'message': 'Group not found'}
-        # Add other group-related commands if needed
+        elif command == 'sendgroup':
+            groupname = message['groupname']
+            sender_name = message['sender_name']
+            receiver_name = message['receiver_name']
+            msg = message['message']
+
+            receiver_username = self.get_user_by_nama(receiver_name)
+            if not receiver_username:
+                return {'status': 'ERROR', 'message': 'Receiver not found'}
+
+            receiver = self.get_user(receiver_username)
+            group_message = {'group': groupname, 'msg_from': sender_name, 'msg_to': receiver_name, 'msg': msg}
+            
+            # Add to receiver's incoming queue
+            if sender_name not in receiver['incoming']:
+                receiver['incoming'][sender_name] = Queue()
+            receiver['incoming'][sender_name].put(group_message)
+            return {'status': 'OK', 'message': 'Group message received'}
+            
         return {'status': 'ERROR', 'message': 'Invalid command'}
+
 
     def leave_group(self, sessionid, groupname):
         if sessionid not in self.sessions:
@@ -316,12 +342,35 @@ class Chat:
                 sender['outgoing'][sender['nama']] = Queue()
             sender['outgoing'][sender['nama']].put(message_to_send)
 
-            # Add to receiver's incoming queue
-            if sender['nama'] not in receiver['incoming']:
-                receiver['incoming'][sender['nama']] = Queue()
-            receiver['incoming'][sender['nama']].put(message_to_send)
+            # Check if receiver is in the same realm or different realm
+            if sender['realm'] == receiver['realm']:
+                # Add to receiver's incoming queue
+                if sender['nama'] not in receiver['incoming']:
+                    receiver['incoming'][sender['nama']] = Queue()
+                receiver['incoming'][sender['nama']].put(message_to_send)
+            else:
+                # Forward to the other realm
+                if self.realm_connector:
+                    self.realm_connector.send_cross_realm_group_message(groupname, sender['nama'], receiver['nama'], message)
 
         return {'status': 'OK', 'message': 'Message sent to group'}
+
+    def send_cross_realm_group_message(self, groupname, sender_name, receiver_name, message):
+        try:
+            if not self.connection:
+                return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            message = json.dumps({
+                'command': 'crossrealm_sendgroup',
+                'groupname': groupname,
+                'sender_name': sender_name,
+                'receiver_name': receiver_name,
+                'message': message
+            }) + "\r\n"
+            self.connection.sendall(message.encode())
+            return {'status': 'OK', 'message': 'Message sent to other realm'}
+        except Exception as e:
+            logging.error(f"Failed to send group message to other realm: {e}")
+            return {'status': 'ERROR', 'message': 'Failed to send group message to other realm'}
 
     def get_group_member(self, groupname):
         if groupname in self.group:
