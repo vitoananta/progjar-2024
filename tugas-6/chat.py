@@ -1,41 +1,6 @@
-import threading
-import socket
-import json
 import logging
 import uuid
 from queue import Queue
-
-class RealmThreadCommunication(threading.Thread):
-    def __init__(self, chats, realm_dest_address, realm_dest_port):
-        super().__init__()
-        self.chats = chats
-        self.chat = {}
-        self.realm_dest_address = realm_dest_address
-        self.realm_dest_port = realm_dest_port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.realm_dest_address, self.realm_dest_port))
-
-    def send_string(self, string):
-        try:
-            self.sock.sendall(string.encode())
-            recv_msg = ""
-            while True:
-                data = self.sock.recv(512)
-                if data:
-                    recv_msg += data.decode()
-                    if recv_msg[-4:] == '\r\n\r\n':
-                        return json.loads(recv_msg)
-        except Exception as e:
-            logging.error(f"Error: {e}")
-            self.sock.close()
-            return {'status': 'ERROR', 'message': 'Failed'}
-
-    def put(self, message):
-        dest = message["msg_to"]
-        if dest not in self.chat:
-            self.chat[dest] = Queue()
-        self.chat[dest].put(message)
-
 
 class Chat:
     def __init__(self):
@@ -122,13 +87,6 @@ class Chat:
             elif command == 'getgroupmember':
                 groupname = j[1].strip()
                 return self.get_group_member(groupname)
-
-            elif command == 'connectrealms':
-                alpha_address = j[1].strip()
-                alpha_port = int(j[2].strip())
-                beta_address = j[3].strip()
-                beta_port = int(j[4].strip())
-                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
 
             else:
                 logging.warning(command)
@@ -314,32 +272,3 @@ class Chat:
             return {'status': 'OK', 'members': self.group[groupname]['members']}
         else:
             return {'status': 'ERROR', 'message': 'Group not found'}
-
-    def connect_realms(self, alpha_address, alpha_port, beta_address, beta_port):
-        try:
-            alpha_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            alpha_socket.connect((alpha_address, alpha_port))
-            alpha_socket.close()
-        except Exception as e:
-            logging.error(f"Failed to connect to alpha server: {e}")
-            return {'status': 'ERROR', 'message': 'Alpha server is not up'}
-
-        try:
-            beta_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            beta_socket.connect((beta_address, beta_port))
-            beta_socket.close()
-        except Exception as e:
-            logging.error(f"Failed to connect to beta server: {e}")
-            return {'status': 'ERROR', 'message': 'Beta server is not up'}
-
-        # Both servers are up, establish communication threads
-        alpha_communication_thread = RealmThreadCommunication(self, alpha_address, alpha_port)
-        beta_communication_thread = RealmThreadCommunication(self, beta_address, beta_port)
-        
-        alpha_communication_thread.start()
-        beta_communication_thread.start()
-        
-        self.realm_communication_threads.append(alpha_communication_thread)
-        self.realm_communication_threads.append(beta_communication_thread)
-
-        return {'status': 'OK', 'message': 'Connection established between alpha and beta servers'}

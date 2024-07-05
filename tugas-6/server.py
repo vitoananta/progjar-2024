@@ -55,9 +55,9 @@ def main():
     realm = input("Pilih salah satu realm (alpha/beta):")
     host = "0.0.0.0"
     if realm == "alpha":
-        port = 8889
+        port = 9993
     elif realm == "beta":
-        port = 8890
+        port = 8889
     else:
         print("Realm tidak ditemukan")
         return

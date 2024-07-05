@@ -2,9 +2,9 @@ import socket
 import json
 
 ALPHA_ADDRESS = '127.0.0.1'
-ALPHA_PORT = 8889
+ALPHA_PORT = 9993
 BETA_ADDRESS = '127.0.0.1'
-BETA_PORT = 8890
+BETA_PORT = 8889
 
 class ChatClient:
     def __init__(self, target_ip, target_port, realm):
@@ -67,13 +67,6 @@ class ChatClient:
             elif command == 'getgroupmember':
                 groupname = j[1].strip()
                 return self.get_group_members(groupname)
-            
-            elif command == 'connectrealms':
-                alpha_address = ALPHA_ADDRESS
-                alpha_port = ALPHA_PORT
-                beta_address = BETA_ADDRESS
-                beta_port = BETA_PORT
-                return self.connect_realms(alpha_address, alpha_port, beta_address, beta_port)
 
             else:
                 return "*Maaf, command tidak benar"
