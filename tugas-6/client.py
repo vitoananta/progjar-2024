@@ -140,6 +140,22 @@ class ChatClient:
         result = self.send_string(string)
         if result['status'] == 'OK':
             return f"Message sent to {usernameto}"
+        elif result['status'] == 'CROSS_REALM':
+            # Send cross-realm message
+            return self.send_cross_realm_message(usernameto, message)
+        else:
+            return f"Error, {result['message']}"
+
+    def send_cross_realm_message(self, usernameto, message):
+        string = json.dumps({
+            'command': 'crossrealm_send',
+            'username_from': self.tokenid,
+            'username_dest': usernameto,
+            'message': message
+        }) + "\r\n"
+        result = self.send_string(string)
+        if result['status'] == 'OK':
+            return f"Cross-realm message sent to {usernameto}"
         else:
             return f"Error, {result['message']}"
         

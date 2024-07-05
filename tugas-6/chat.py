@@ -3,10 +3,11 @@ import uuid
 from queue import Queue
 
 class Chat:
-    def __init__(self):
+    def __init__(self, realm_connector=None):
         self.sessions = {}
         self.users = {}
         self.group = {}
+        self.realm_connector = realm_connector
         self.users['messi'] = {'nama': 'Lionel Messi', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
         self.users['henderson'] = {'nama': 'Jordan Henderson', 'password': 'surabaya', 'realm': 'alpha', 'incoming': {}, 'outgoing': {}}
         self.users['lineker'] = {'nama': 'Gary Lineker', 'password': 'surabaya', 'realm': 'beta', 'incoming': {}, 'outgoing': {}}
@@ -151,8 +152,6 @@ class Chat:
         
         return {'status': 'OK', 'sessions': sessions_copy}
 
-
-
     def get_detail_session(self, sessionid):
         def convert_queues(obj):
             if isinstance(obj, Queue):
@@ -181,9 +180,21 @@ class Chat:
         sender = self.get_user(username_from)
         receiver = self.get_user(username_dest)
 
-        if not sender or not receiver:
-            return {'status': 'ERROR', 'message': 'User not found'}
+        if not sender:
+            return {'status': 'ERROR', 'message': 'Sender not found'}
 
+        if not receiver:
+            return {'status': 'ERROR', 'message': 'Receiver not found'}
+
+        if sender['realm'] != receiver['realm']:
+            # Cross-realm messaging
+            if self.realm_connector:
+                # Send message to the other realm
+                return self.realm_connector.send_cross_realm_message(username_from, username_dest, message)
+            else:
+                return {'status': 'ERROR', 'message': 'No realm connector available'}
+
+        # Local message handling
         message = {'msg_from': sender['nama'], 'msg_to': receiver['nama'], 'msg': message}
         outqueue_sender = sender['outgoing']
         inqueue_receiver = receiver['incoming']
@@ -194,6 +205,29 @@ class Chat:
             inqueue_receiver[sender['nama']] = Queue()
         inqueue_receiver[sender['nama']].put(message)
         return {'status': 'OK', 'message': 'Message sent'}
+    
+    def send_message_cross_realm(self, message):
+        username_from = message['username_from']
+        username_dest = message['username_dest']
+        msg = message['message']
+
+        sender = self.get_user(username_from)
+        receiver = self.get_user(username_dest)
+
+        if not sender or not receiver:
+            return {'status': 'ERROR', 'message': 'User not found'}
+
+        message = {'msg_from': sender['nama'], 'msg_to': receiver['nama'], 'msg': msg}
+        outqueue_sender = sender['outgoing']
+        inqueue_receiver = receiver['incoming']
+        if sender['nama'] not in outqueue_sender:
+            outqueue_sender[sender['nama']] = Queue()
+        outqueue_sender[sender['nama']].put(message)
+        if sender['nama'] not in inqueue_receiver:
+            inqueue_receiver[sender['nama']] = Queue()
+        inqueue_receiver[sender['nama']].put(message)
+        return {'status': 'OK', 'message': 'Cross-realm message sent'}
+
 
     def get_inbox(self, username):
         s_fr = self.get_user(username)

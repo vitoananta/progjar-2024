@@ -6,12 +6,11 @@ import logging
 import time
 from chat import Chat
 
-chatserver = Chat()
-
 class ProcessTheClient(threading.Thread):
-    def __init__(self, connection, address):
+    def __init__(self, connection, address, chatserver):
         self.connection = connection
         self.address = address
+        self.chatserver = chatserver
         threading.Thread.__init__(self)
 
     def run(self):
@@ -22,39 +21,58 @@ class ProcessTheClient(threading.Thread):
                 d = data.decode()
                 rcv = rcv + d
                 if rcv[-2:] == '\r\n':
-                    # end of command, process string
                     logging.warning("data dari client: {}".format(rcv))
-                    hasil = json.dumps(chatserver.proses(rcv))
+                    try:
+                        message = json.loads(rcv.strip())
+                        if 'command' in message and message['command'] == 'crossrealm_send':
+                            hasil = json.dumps(self.chatserver.send_message_cross_realm(message))
+                        else:
+                            hasil = json.dumps(self.chatserver.proses(rcv))
+                    except json.JSONDecodeError:
+                        hasil = json.dumps(self.chatserver.proses(rcv))
                     hasil = hasil + "\r\n\r\n"
-                    logging.warning("balas ke  client: {}".format(hasil))
+                    logging.warning("balas ke client: {}".format(hasil))
                     self.connection.sendall(hasil.encode())
                     rcv = ""
             else:
                 break
         self.connection.close()
 
+
 class Server(threading.Thread):
-    def __init__(self, host, port):
+    def __init__(self, host, port, target_host, target_port):
         self.the_clients = []
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.host = host
         self.port = port
+        self.target_host = target_host
+        self.target_port = target_port
+        self.realm_connector = RealmConnector(host, port, target_host, target_port)
+        self.chatserver = Chat(self.realm_connector)
         threading.Thread.__init__(self)
 
     def run(self):
         self.my_socket.bind((self.host, self.port))
         self.my_socket.listen(1)
+        self.realm_connector.start()
         while True:
             self.connection, self.client_address = self.my_socket.accept()
             logging.warning("connection from {}".format(self.client_address))
             
-            clt = ProcessTheClient(self.connection, self.client_address)
+            clt = ProcessTheClient(self.connection, self.client_address, self.chatserver)
             clt.start()
             self.the_clients.append(clt)
 
 class RealmConnector(threading.Thread):
+    _instance = None
+
+    @staticmethod
+    def get_instance():
+        return RealmConnector._instance
+
     def __init__(self, host, port, target_host, target_port):
+        RealmConnector._instance = self
         self.host = host
         self.port = port
         self.target_host = target_host
@@ -75,6 +93,23 @@ class RealmConnector(threading.Thread):
                 self.connection = None
                 time.sleep(5)
 
+    def send_cross_realm_message(self, username_from, username_dest, message):
+        try:
+            if not self.connection:
+                return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            message = json.dumps({
+                'command': 'crossrealm_send',
+                'username_from': username_from,
+                'username_dest': username_dest,
+                'message': message
+            }) + "\r\n"
+            self.connection.sendall(message.encode())
+            return {'status': 'OK', 'message': 'Message sent to other realm'}
+        except Exception as e:
+            logging.error(f"Failed to send message to other realm: {e}")
+            return {'status': 'ERROR', 'message': 'Failed to send message to other realm'}
+
+
 def main():
     realm = input("Pilih salah satu realm (alpha/beta):")
     host = "0.0.0.0"
@@ -91,14 +126,8 @@ def main():
         return
 
     print("Server berjalan pada {} port {}".format(host, port))
-    svr = Server(host, port)
+    svr = Server(host, port, target_host, target_port)
     svr.start()
-
-    while True:
-        cmd = input("Type 'connect' to try to connect to the other realm: ")
-        if cmd == "connect":
-            connector = RealmConnector(host, port, target_host, target_port)
-            connector.start()
 
 if __name__ == "__main__":
     main()
