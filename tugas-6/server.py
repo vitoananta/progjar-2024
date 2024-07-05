@@ -96,6 +96,22 @@ class RealmConnector(threading.Thread):
                 self.connection = None
                 time.sleep(5)
 
+    def send_cross_realm_message(self, username_from, username_dest, message):
+        try:
+            if not self.connection:
+                return {'status': 'ERROR', 'message': 'No connection to target realm'}
+            message = json.dumps({
+                'command': 'crossrealm_send',
+                'username_from': username_from,
+                'username_dest': username_dest,
+                'message': message
+            }) + "\r\n"
+            self.connection.sendall(message.encode())
+            return {'status': 'OK', 'message': 'Message sent to other realm'}
+        except Exception as e:
+            logging.error(f"Failed to send message to other realm: {e}")
+            return {'status': 'ERROR', 'message': 'Failed to send message to other realm'}
+
     def send_cross_realm_group_message(self, groupname, sender_name, receiver_name, message):
         try:
             if not self.connection:
